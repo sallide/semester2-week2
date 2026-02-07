@@ -18,7 +18,28 @@ def customer_tickets(conn, customer_id):
     Include only tickets purchased by the given customer_id.
     Order results by film title alphabetically.
     """
-    pass
+    
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT films.title, screenings.screen, tickets.price FROM tickets
+                   
+    LEFT JOIN screenings
+    ON screenings.screening_id = tickets.screening_id
+    LEFT JOIN films
+    ON films.film_id = screenings.film_id
+                   
+    LEFT JOIN customers
+    ON customers.customer_id=tickets.customer_id
+    
+    ORDER BY films.title asc;
+                   
+                   """)
+
+    results = cursor.fetchall()
+    conn.close()
+
+    return results
 
 
 def screening_sales(conn):
@@ -29,7 +50,24 @@ def screening_sales(conn):
     Include all screenings, even if tickets_sold is 0.
     Order results by tickets_sold descending.
     """
-    pass
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT screenings.screening_id, films.title, COUNT(tickets.ticket_id) AS tickets_sold FROM screenings
+                   
+    LEFT JOIN tickets
+    ON screenings.screening_id = tickets.screening_id
+    INNER JOIN films
+    ON films.film_id = screenings.film_id        
+    GROUP BY screenings.screening_id, films.title
+    ORDER BY tickets_sold DESC;
+                   
+                   """)
+
+    results = cursor.fetchall()
+    conn.close()
+
+    return results
 
 
 def top_customers_by_spend(conn, limit):
@@ -42,4 +80,21 @@ def top_customers_by_spend(conn, limit):
     Order by total_spent descending.
     Limit the number of rows returned to `limit`.
     """
-    pass
+    
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT customers.customer_name, SUM(tickets.price) AS total_spent FROM customers
+     
+    INNER JOIN tickets
+    ON customers.customer_id=tickets.customer_id
+                   
+    GROUP BY customers.customer_name, customers.customer_id
+    ORDER BY total_spent DESC LIMIT ?;
+                   
+                   """, (limit,))
+
+    results = cursor.fetchall()
+    conn.close()
+
+    return results
